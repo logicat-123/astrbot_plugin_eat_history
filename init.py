@@ -6,7 +6,6 @@ from astrbot.api import logger
 def init_db():
     # 运行环境下的db路径
     db_path = runtime.get_resource_path("./data", config.DB_PATH)
-    print(f"db_path: {db_path}")
     
     if not os.path.exists(db_path):
         logger.info("初始化数据库")

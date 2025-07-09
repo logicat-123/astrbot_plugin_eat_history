@@ -1,5 +1,5 @@
-name: 赤石插件 # 这是你的插件的唯一识别名。
+name: astrbot_plugin_eat_history # 这是你的插件的唯一识别名。
 desc: 自动保存转发记录，随时查看 # 插件简短描述
-version: v1.0.0 # 插件版本号。格式：v1.1.1 或者 v1.1
+version: v1.0.1 # 插件版本号。格式：v1.1.1 或者 v1.1
 author: logicat # 作者
 repo: https://github.com/logicat-123/astrbot_plugin_eat_history # 插件的仓库地址

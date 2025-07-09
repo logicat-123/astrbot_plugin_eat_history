@@ -1,0 +1,21 @@
+{
+    "gather_mode": {
+        "type": "string",
+        "default": "黑名单",
+        "description": "收集模式",
+        "options": [
+            "黑名单",
+            "白名单"
+        ]
+    },
+    "source_whitelist": {
+        "type": "list",
+        "default": [],
+        "description": "白名单模式生效, 限定收集史的群组或者好友"
+    },
+    "source_blacklist": {
+        "type": "list",
+        "default": [],
+        "description": "黑名单模式生效, 限定不收集史的群组或者好友"
+    }
+}
