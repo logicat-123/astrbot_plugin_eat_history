@@ -1,24 +1,59 @@
 from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
+from . import init
+from .utils import db
+from datetime import datetime
+import json
 
-@register("helloworld", "YourName", "一个简单的 Hello World 插件", "1.0.0")
-class MyPlugin(Star):
+@register("eat_history", "logicat", "赤石插件", "0.0.1")
+class EatHistory(Star):
     def __init__(self, context: Context):
         super().__init__(context)
+        init.init()
 
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
     
-    # 注册指令的装饰器。指令名为 helloworld。注册成功后，发送 `/helloworld` 就会触发这个指令，并回复 `你好, {user_name}!`
-    @filter.command("helloworld")
-    async def helloworld(self, event: AstrMessageEvent):
-        """这是一个 hello world 指令""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
-        user_name = event.get_sender_name()
-        message_str = event.message_str # 用户发的纯文本消息字符串
-        message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
-        logger.info(message_chain)
-        yield event.plain_result(f"Hello, {user_name}, 你发了 {message_str}!") # 发送一条纯文本消息
+    @filter.command("我要赤石")
+    async def eat_history(self, event: AstrMessageEvent):
+        """赤石指令"""
+        user_id = event.message_obj.sender.user_id
+        group_id = event.message_obj.group_id
+        
+        # 从数据库中随机获取一条历史记录并发送
+        history = db.select_random_one("message_history")
+        
+        playload = {
+            "group_id": group_id,
+            "message_id": history["message_id"]
+        }
+        await event.bot.api.call_action("forward_group_single_msg", **playload)
 
     async def terminate(self):
         """可选择实现异步的插件销毁方法，当插件被卸载/停用时会调用。"""
+        pass
+
+    @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP | filter.PlatformAdapterType.QQOFFICIAL)
+    async def on_aiocqhttp(self, event: AstrMessageEvent):
+        '''只接收 AIOCQHTTP 和 QQOFFICIAL 的消息'''
+        # 收到转发消息时，保存到数据库中
+        raw_message = event.message_obj.raw_message
+        message_list = raw_message.get("message") if isinstance(raw_message, dict) else None
+        is_forward = (message_list is not None and 
+                     isinstance(message_list, list) and 
+                     message_list and
+                     isinstance(message_list[0], dict) and
+                     message_list[0].get("type") == "forward")
+        group_id = event.message_obj.group_id
+        user_id = event.message_obj.sender.user_id
+        user_nick = event.message_obj.sender.nickname
+        message_id = event.message_obj.message_id
+        if is_forward:
+            db.insert_by_entity("message_history", {
+                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "user_id": user_id,
+                "user_nick": user_nick,
+                "message_id": message_id,
+                "group_id": group_id,
+            })

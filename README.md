@@ -1,9 +1,3 @@
-# helloworld
+# 赤石插件
 
-AstrBot 插件模板
-
-A template plugin for AstrBot plugin feature
-
-# 支持
-
-[帮助文档](https://astrbot.app)
+缓存转发消息，发送 `/我要赤石`随机查看
