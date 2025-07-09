@@ -11,6 +11,7 @@ class EatHistory(Star):
         super().__init__(context)
         init.init()
         self.config = config
+        logger.info("赤石插件加载成功")
 
     @filter.command("我要赤石")
     async def eat_history(self, event: AstrMessageEvent):

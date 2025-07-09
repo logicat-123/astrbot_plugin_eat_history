@@ -5,11 +5,11 @@ import os
 from astrbot.api import logger
 def init_db():
     # 运行环境下的db路径
-    db_path = runtime.get_resource_path("./data", config.DB_PATH)
+    db_path = config.DB_PATH
     
     if not os.path.exists(db_path):
         logger.info("初始化数据库")
-        os.makedirs(os.path.dirname(db_path))
+        # os.makedirs(os.path.dirname(db_path))
         conn = db.get_conn(db_path)
         db.executescript(file.read_file(
             runtime.get_resource_path("./resources/sql/init.sql")
