@@ -20,22 +20,31 @@ class EatHistory(Star):
                 
         # 从数据库中随机获取一条历史记录并发送
         history = db.select_random_one("message_history")
-        
-        playload = {
-            "group_id": group_id,
-            "message_id": history["message_id"]
-        }
-        await event.bot.api.call_action("forward_group_single_msg", **playload)
+        if not history:
+            yield event.plain_result("没有历史记录喵")
+        else:
+            if group_id:
+                playload = {
+                    "group_id": group_id,
+                    "message_id": history["message_id"]
+                }
+                await event.bot.api.call_action("forward_group_single_msg", **playload)
+            else:
+                playload = {
+                    "user_id": user_id,
+                    "message_id": history["message_id"]
+                }
+                await event.bot.api.call_action("forward_friend_single_msg", **playload)
         event.stop_event()
 
     @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP | filter.PlatformAdapterType.QQOFFICIAL)
     async def on_aiocqhttp(self, event: AstrMessageEvent):
         '''只接收 AIOCQHTTP 和 QQOFFICIAL 的消息'''
-        print("received")
         group_id = event.message_obj.group_id
         user_id = event.message_obj.sender.user_id
         user_nick = event.message_obj.sender.nickname
         message_id = event.message_obj.message_id
+        # 检查黑白名单
         if self.config["gather_mode"] == "黑名单":
             if user_id in self.config["source_blacklist"] or group_id in self.config["source_blacklist"]:
                 return
@@ -58,3 +67,4 @@ class EatHistory(Star):
                 "message_id": message_id,
                 "group_id": group_id,
             })
+            event.stop_event()
