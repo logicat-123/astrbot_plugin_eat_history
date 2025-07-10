@@ -62,17 +62,17 @@ class EatHistory(Star):
                      isinstance(message_list[0], dict) and
                      message_list[0].get("type") == "forward")
         if is_forward:
-            payloads = {
-                "message_id": message_id
-            }
-            response = await event.bot.api.call_action("get_forward_msg", **payloads)
+            # payloads = {
+            #     "message_id": message_id
+            # }
+            # response = await event.bot.api.call_action("get_forward_msg", **payloads)
             db.insert_by_entity("message_history", {
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "user_id": user_id,
                 "user_nick": user_nick,
                 "message_id": message_id,
                 "group_id": group_id,
-                "content": json.dumps(response, ensure_ascii=False)
+                # "content": json.dumps(response, ensure_ascii=False)
             })
 
             
