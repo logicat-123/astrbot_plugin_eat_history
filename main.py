@@ -4,6 +4,7 @@ from astrbot.api import logger, AstrBotConfig
 from . import init
 from .utils import db
 from datetime import datetime
+import json
 
 @register("astrbot_plugin_eat_history", "logicat", "赤石插件", "1.0.1")
 class EatHistory(Star):
@@ -13,7 +14,7 @@ class EatHistory(Star):
         self.config = config
         logger.info("赤石插件加载成功")
 
-    @filter.command("我要赤石")
+    @filter.command("我要赤石", alias={"我要吃屎", "我要吃史", "我要吃史", "我要赤使", "我要赤史"})
     async def eat_history(self, event: AstrMessageEvent):
         """赤石指令"""
         user_id = event.message_obj.sender.user_id
@@ -38,8 +39,8 @@ class EatHistory(Star):
                 await event.bot.api.call_action("forward_friend_single_msg", **playload)
         event.stop_event()
 
-    @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP | filter.PlatformAdapterType.QQOFFICIAL)
-    async def on_aiocqhttp(self, event: AstrMessageEvent):
+    @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP | filter.PlatformAdapterType.QQOFFICIAL, priority=999)
+    async def save_history(self, event: AstrMessageEvent):
         '''只接收 AIOCQHTTP 和 QQOFFICIAL 的消息'''
         group_id = event.message_obj.group_id
         user_id = event.message_obj.sender.user_id
@@ -61,11 +62,24 @@ class EatHistory(Star):
                      isinstance(message_list[0], dict) and
                      message_list[0].get("type") == "forward")
         if is_forward:
+            payloads = {
+                "message_id": message_id
+            }
+            response = await event.bot.api.call_action("get_forward_msg", **payloads)
             db.insert_by_entity("message_history", {
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "user_id": user_id,
                 "user_nick": user_nick,
                 "message_id": message_id,
                 "group_id": group_id,
+                "content": json.dumps(response, ensure_ascii=False)
             })
-            event.stop_event()
+
+            
+    
+    @filter.command("查看史书")
+    async def see_history_info(self, event: AstrMessageEvent):
+        """查看历史信息"""
+        # 从数据库中随机获取一条历史记录并发送
+        total = db.count_by_entity("message_history") or 0
+        yield event.plain_result(f"共计 {total} 条历史记录")

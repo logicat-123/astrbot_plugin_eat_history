@@ -107,6 +107,16 @@ def select_random_one(table_name):
                       limit 1
                       """)
 
+def count_by_entity(table_name, entity={}):
+    sql = f"""
+    select
+        count(0) as total
+    from {table_name}
+    """
+    if entity:
+        sql += " where " + " and ".join([f"{key}=:{key}" for key in entity])
+    result = execute(sql, entity).fetchone()
+    return result["total"] if result else 0
 def worker():
     conn = get_conn()
     cursor = conn.cursor()
