@@ -1,9 +1,17 @@
 import sqlite3
 import threading
+from astrbot.api import logger
 
 local_data = threading.local()
 
+def set_enable_sql_log(enable_sql_log: bool):
+    if not enable_sql_log: return
+    def sql_trace_callback(log_message):
+        logger.info(f"SQL执行: {log_message}")
+
+    get_conn().set_trace_callback(sql_trace_callback)
 def get_conn(db_path=None):
+    """获取数据库连接，初始化连接"""
     if not hasattr(local_data, "conn") and db_path:
         local_data.conn = sqlite3.connect(db_path)
         # 设置row_factory为sqlite3.Row
@@ -88,7 +96,7 @@ def upsert_by_entity(table_name, search_entity, update_entity):
         return insert_by_entity(table_name, update_entity)
 
 def delete_by_entity(table_name, search_entity={}, delete_when_empty=True):
-    if (not search_entity) and (not delete_by_entity):
+    if (not search_entity) and (not delete_when_empty):
         return
     sql = f"""
     delete from
@@ -122,5 +130,3 @@ def worker():
     cursor = conn.cursor()
     cursor.execute("SELECT ...")
     # 处理数据...
-
-# 启动多个线程执行 worker 函数

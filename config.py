@@ -1,1 +1,0 @@
-DB_PATH = "./eat_history.db"

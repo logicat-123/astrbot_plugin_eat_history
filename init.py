@@ -1,31 +1,15 @@
 # 初始化操作
-from .utils import db, file, runtime
-from . import config
+from .core.utils import db, file, runtime
 import os
 from astrbot.api import logger
-def init_db():
-    # 运行环境下的db路径
-    db_path = config.DB_PATH
-    
+def init_db(db_path):
+    # 执行初始化脚本
     if not os.path.exists(db_path):
         logger.info("初始化数据库")
-        # os.makedirs(os.path.dirname(db_path))
-        conn = db.get_conn(db_path)
+        db.get_conn(db_path)
         db.executescript(file.read_file(
             runtime.get_resource_path("./resources/sql/init.sql")
         ))
         logger.info("初始化数据库成功")
-
-    # 连接到SQLite数据库
-    conn = db.get_conn(db_path)
-
-    # 设置回调函数以记录SQL语句
-    def sql_trace_callback(log_message):
-        logger.info(f"SQL执行: {log_message}")
-
-    conn.set_trace_callback(sql_trace_callback)
-
-def init():
-    init_db()
-
-init()
+    else:
+        db.get_conn(db_path)

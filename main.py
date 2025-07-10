@@ -1,20 +1,22 @@
-from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
-from astrbot.api.star import Context, Star, register
+from astrbot.api.event import filter, AstrMessageEvent
+from astrbot.api.star import Context, Star, register, StarTools
 from astrbot.api import logger, AstrBotConfig
 from . import init
-from .utils import db
+from .core.utils import db, astr
+from .core.filter.source_message_filter import SourceMessageFilter
 from datetime import datetime
-import json
+import pathlib
 
 @register("astrbot_plugin_eat_history", "logicat", "赤石插件", "1.0.1")
 class EatHistory(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
-        init.init()
+        init.init_db(pathlib.Path(StarTools.get_data_dir()).joinpath("eat_history.db"))
         self.config = config
+        self.source_message_filter = SourceMessageFilter(self.config)
         logger.info("赤石插件加载成功")
 
-    @filter.command("我要赤石", alias={"我要吃屎", "我要吃史", "我要吃史", "我要赤使", "我要赤史"})
+    @filter.command("我要赤石", alias={"我要吃屎", "我要吃史", "我要吃石", "我要赤使", "我要赤史"})
     async def eat_history(self, event: AstrMessageEvent):
         """赤石指令"""
         user_id = event.message_obj.sender.user_id
@@ -42,41 +44,23 @@ class EatHistory(Star):
     @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP | filter.PlatformAdapterType.QQOFFICIAL, priority=999)
     async def save_history(self, event: AstrMessageEvent):
         '''只接收 AIOCQHTTP 和 QQOFFICIAL 的消息'''
+        # 检查黑白名单
+        if not self.source_message_filter.filt(event):
+            return
+        # 收到转发消息时，保存到数据库中
         group_id = event.message_obj.group_id
         user_id = event.message_obj.sender.user_id
         user_nick = event.message_obj.sender.nickname
         message_id = event.message_obj.message_id
-        # 检查黑白名单
-        if self.config["gather_mode"] == "黑名单":
-            if user_id in self.config["source_blacklist"] or group_id in self.config["source_blacklist"]:
-                return
-        else:
-            if user_id not in self.config["source_whitelist"] and group_id not in self.config["source_whitelist"]:
-                return
-        # 收到转发消息时，保存到数据库中
-        raw_message = event.message_obj.raw_message
-        message_list = raw_message.get("message") if isinstance(raw_message, dict) else None
-        is_forward = (message_list is not None and 
-                     isinstance(message_list, list) and 
-                     message_list and
-                     isinstance(message_list[0], dict) and
-                     message_list[0].get("type") == "forward")
-        if is_forward:
-            # payloads = {
-            #     "message_id": message_id
-            # }
-            # response = await event.bot.api.call_action("get_forward_msg", **payloads)
+        if astr.is_forward(event.message_obj):
             db.insert_by_entity("message_history", {
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "user_id": user_id,
                 "user_nick": user_nick,
                 "message_id": message_id,
                 "group_id": group_id,
-                # "content": json.dumps(response, ensure_ascii=False)
             })
 
-            
-    
     @filter.command("查看史书")
     async def see_history_info(self, event: AstrMessageEvent):
         """查看历史信息"""
