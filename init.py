@@ -13,3 +13,4 @@ def init_db(db_path):
         logger.info("初始化数据库成功")
     else:
         db.get_conn(db_path)
+    db.add_column_if_not_exists("message_history", "weight", "integer", 0)

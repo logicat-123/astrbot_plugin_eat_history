@@ -106,14 +106,18 @@ def delete_by_entity(table_name, search_entity={}, delete_when_empty=True):
     """ if search_entity else "")
     return execute(sql, search_entity)
 
-def select_random_one(table_name):
-    return select_one(f"""
-                      select
-                      *
-                      from {table_name}
-                      order by random()
-                      limit 1
-                      """)
+def select_random_one(table_name, order_bys=None):
+    sql = f"""
+               select
+               *
+               from {table_name}
+               order by
+            """
+    if order_bys:
+        sql += ",\n".join([f"{order_by}" for order_by in order_bys])
+        sql += ",\n"
+    sql += " random() limit 1"
+    return select_one(sql)
 
 def count_by_entity(table_name, entity={}):
     sql = f"""
@@ -130,3 +134,23 @@ def worker():
     cursor = conn.cursor()
     cursor.execute("SELECT ...")
     # 处理数据...
+
+import sqlite3
+
+def column_exists(cursor, table_name, column_name):
+    cursor.execute(f"PRAGMA table_info({table_name})")
+    columns = cursor.fetchall()
+    return any(c[1] == column_name for c in columns)
+
+def add_column_if_not_exists(table_name, column_name, column_type, default_value=None):
+    conn = get_conn()
+    cursor = conn.cursor()
+    if not column_exists(cursor, table_name, column_name):
+        query = f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"
+        if default_value is not None:
+            query += f" DEFAULT {default_value}"
+        conn.execute(query)
+        logger.info(f"Added column {column_name}")
+    else:
+        logger.info(f"Column {column_name} already exists.")
+    conn.commit()
