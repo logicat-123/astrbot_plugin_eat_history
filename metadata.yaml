@@ -1,5 +1,5 @@
 name: astrbot_plugin_eat_history
 description: 自动保存转发的消息记录，随时查看
-version: v1.0.4
+version: v1.0.5
 author: logicat
 repo: https://github.com/logicat-123/astrbot_plugin_eat_history
