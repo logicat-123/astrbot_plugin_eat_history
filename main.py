@@ -25,22 +25,29 @@ class EatHistory(Star):
         # 从数据库中随机获取一条历史记录并发送
         history = db.select_random_one("message_history", order_bys=["weight desc"])
         if not history:
-            yield event.plain_result("没有历史记录喵")
+            await event.plain_result("没有历史记录喵")
         else:
-            if group_id:
-                playload = {
-                    "group_id": group_id,
-                    "message_id": history["message_id"]
-                }
-                await event.bot.api.call_action("forward_group_single_msg", **playload)
+            message_id = history["message_id"]                
+            try:
+                if group_id:
+                    playload = {
+                        "group_id": group_id,
+                        "message_id": message_id
+                    }
+                    await event.bot.api.call_action("forward_group_single_msg", **playload)
+                else:
+                    playload = {
+                        "user_id": user_id,
+                        "message_id": message_id
+                    }
+                    await event.bot.api.call_action("forward_friend_single_msg", **playload)
+            except Exception as e:
+                logger.info(f"消息{message_id}已失效，清理该消息")
+                db.delete_by_entity("message_history", {"message_id": message_id})
+                await self.eat_history(event)
             else:
-                playload = {
-                    "user_id": user_id,
-                    "message_id": history["message_id"]
-                }
-                await event.bot.api.call_action("forward_friend_single_msg", **playload)
-        # 每次读完消息后，权重降低
-        history = db.update_by_entity("message_history", {"message_id": history["message_id"]}, {"weight": history["weight"] - 1})
+                # 每次读完消息后，权重降低
+                history = db.update_by_entity("message_history", {"message_id": history["message_id"]}, {"weight": history["weight"] - 1})
         event.stop_event()
 
     @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP | filter.PlatformAdapterType.QQOFFICIAL, priority=999)
