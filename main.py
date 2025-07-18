@@ -62,14 +62,12 @@ class EatHistory(Star):
         user_nick = event.message_obj.sender.nickname
         message_id = event.message_obj.message_id
         if astr.is_forward(event.message_obj):
-            print(f"content === {event.message_obj.raw_message}")
             db.insert_by_entity("message_history", {
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "user_id": user_id,
                 "user_nick": user_nick,
                 "message_id": message_id,
                 "group_id": group_id,
-                # "content": 
             })
 
     @filter.command("查看史书")
